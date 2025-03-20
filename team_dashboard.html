@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js"></script>
+    <script>
+        // Your Firebase Config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Send Message to Database
+        function sendMessage() {
+            let msg = document.getElementById("chatMessage").value;
+            if (msg.trim() === "") return;
+
+            db.collection("messages").add({
+                text: msg,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            document.getElementById("chatMessage").value = "";
+        }
+
+        // Load Messages
+        db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+            let chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML = "";
+            snapshot.forEach(doc => {
+                chatBox.innerHTML += `<p>${doc.data().text}</p>`;
+            });
+        });
+
+        // Add Task
+        function addTask() {
+            let task = document.getElementById("newTask").value;
+            if (task.trim() === "") return;
+
+            db.collection("tasks").add({ task: task });
+            document.getElementById("newTask").value = "";
+        }
+
+        // Load Tasks
+        db.collection("tasks").onSnapshot(snapshot => {
+            let taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+            snapshot.forEach(doc => {
+                taskList.innerHTML += `<li>${doc.data().task}</li>`;
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Welcome to the Team Dashboard!</h1>
+    <div>
+        <h2>Chat</h2>
+        <div id="chatBox"></div>
+        <input type="text" id="chatMessage" placeholder="Type a message">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <div>
+        <h2>Tasks</h2>
+        <ul id="taskList"></ul>
+        <input type="text" id="newTask" placeholder="Enter task">
+        <button onclick="addTask()">Add Task</button>
+    </div>
+</body>
+</html>
