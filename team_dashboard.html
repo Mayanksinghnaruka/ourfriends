@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to the Team Dashboard</h1>
+    
+    <!-- Chat Section -->
+    <h2>Chat</h2>
+    <input type="text" id="messageInput" placeholder="Type your message">
+    <button onclick="sendMessage()">Send</button>
+    <div id="chatBox"></div>
+
+    <!-- Task Section -->
+    <h2>Tasks</h2>
+    <input type="text" id="taskInput" placeholder="Assign a task">
+    <button onclick="addTask()">Add Task</button>
+    <ul id="taskList"></ul>
+
+    <!-- File Upload Section -->
+    <h2>Upload Files</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+    <ul id="fileList"></ul>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+
+    <script>
+        // 🔹 STEP 1: Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuVuVpjC9cQVFJ82fbBVAQAShJXg_SQlk",
+            authDomain: "ourfriends-team.firebaseapp.com",
+            projectId: "ourfriends-team",
+            storageBucket: "ourfriends-team.firebasestorage.app",
+            messagingSenderId: "945001150135",
+            appId: "1:945001150135:web:67da2bbb176fd530757f32"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // 🔹 STEP 2: Send a Message
+        function sendMessage() {
+            let message = document.getElementById("messageInput").value;
+            if (!message) return alert("Enter a message!");
+
+            db.collection("messages").add({
+                text: message,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("Message sent!");
+                document.getElementById("messageInput").value = ""; 
+                loadMessages();
+            })
+            .catch(error => console.error("Error sending message:", error));
+        }
+
+        // 🔹 STEP 3: Load Messages
+        function loadMessages() {
+            let chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML = "";
+
+            db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+                chatBox.innerHTML = "";
+                snapshot.forEach(doc => {
+                    let msg = doc.data().text;
+                    chatBox.innerHTML += `<p>${msg}</p>`;
+                });
+            });
+        }
+
+        // 🔹 STEP 4: Assign Tasks
+        function addTask() {
+            let task = document.getElementById("taskInput").value;
+            if (!task) return alert("Enter a task!");
+
+            db.collection("tasks").add({
+                task: task,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("Task added!");
+                document.getElementById("taskInput").value = "";
+                loadTasks();
+            })
+            .catch(error => console.error("Error adding task:", error));
+        }
+
+        // 🔹 STEP 5: Load Tasks
+        function loadTasks() {
+            let taskList = document.getElementById("taskList");
+            taskList.innerHTML = "";
+
+            db.collection("tasks").orderBy("timestamp").onSnapshot(snapshot => {
+                taskList.innerHTML = "";
+                snapshot.forEach(doc => {
+                    let task = doc.data().task;
+                    taskList.innerHTML += `<li>${task}</li>`;
+                });
+            });
+        }
+
+        // 🔹 STEP 6: Upload a File
+        function uploadFile() {
+            let file = document.getElementById("fileInput").files[0];
+            if (!file) return alert("Select a file first!");
+
+            let storageRef = storage.ref("uploads/" + file.name);
+            storageRef.put(file).then(snapshot => {
+                snapshot.ref.getDownloadURL().then(url => {
+                    db.collection("files").add({ name: file.name, url: url });
+                    alert("File uploaded successfully!");
+                    showFiles();
+                });
+            });
+        }
+
+        // 🔹 STEP 7: Show Uploaded Files
+        function showFiles() {
+            let fileList = document.getElementById("fileList");
+            fileList.innerHTML = "";
+
+            db.collection("files").get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    let file = doc.data();
+                    fileList.innerHTML += `<li><a href="${file.url}" target="_blank">${file.name}</a></li>`;
+                });
+            });
+        }
+
+        // 🔹 Load Data on Page Load
+        loadMessages();
+        loadTasks();
+        showFiles();
+    </script>
+</body>
+</html>
